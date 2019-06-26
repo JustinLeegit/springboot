@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org/DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yixia.matrix.abtest.mapper.ABProductQualityMapper">
+
+    <select id="getList" parameterType="ABProductQualityCondition"
+            resultType="ABProductQualityEntity">
+        SELECT
+        dt,
+        <if test="plat_arr == null or plat_arr.length == 0">
+            '全部'
+        </if>
+        <if test="plat_arr != null and plat_arr.length > 0">
+            plat
+        </if>
+        AS plat,
+        <if test="user_type_arr == null or user_type_arr.length == 0">
+            '全部'
+        </if>
+        <if test="user_type_arr != null and user_type_arr.length > 0">
+            IF(user_type=0,'老用户','新用户')
+        </if>
+        AS user_type,
+        <if test="abid_arr == null or abid_arr.length == 0">
+            '全部'
+        </if>
+        <if test="abid_arr != null and abid_arr.length > 0">
+            abid
+        </if>
+        AS abid,
+        <if test="version_arr == null or version_arr.length == 0">
+            '全部'
+        </if>
+        <if test="version_arr != null and version_arr.length > 0">
+            app_version
+        </if>
+        AS version,
+        SUM(dau) AS dau,
+        SUM(new_user_num) AS new_user_num,
+        <!-- SUM(push_click_users) AS push_click_dev_num, -->
+        ROUND(SUM(use_time_len)/60,2) AS use_duration,
+        ROUND(SUM(play_duration)/60,2) AS play_duration,
+        ROUND(SUM(duration)/60,2) AS duration,
+        SUM(play_times) AS play_num,
+        SUM(play_users) AS play_user_num,
+        SUM(play_video_num) AS play_video_num,
+        <!-- SUM(click_times) AS click_num,
+        SUM(click_users) AS click_user_num, -->
+        SUM(show_times) AS show_num,
+        SUM(show_users) AS show_user_num,
+        SUM(show_video_num) AS show_vid_num,
+        SUM(refresh_times) AS refresh_num,
+        SUM(refresh_user) AS refresh_user_num,
+        SUM(auto_refresh_times) AS auto_refresh_num,
+        SUM(auto_refresh_user) AS auto_refresh_user_num,
+        SUM(manual_refresh_times) AS hand_refresh_num,
+        SUM(manual_refresh_user) AS hand_refresh_user_num,
+        SUM(exit_times) AS exit_num,
+        SUM(start_times) AS start_num,
+        SUM(news_show_num) AS news_show_num,
+        SUM(show_news_num) AS show_news_num,
+        SUM(news_show_user_num) AS news_show_user_num,
+        SUM(news_click_num) AS news_click_num,
+        SUM(click_news_num) AS click_news_num,
+        SUM(news_click_user_num) AS news_click_user_num,
+        ROUND(SUM(news_detail_duration)/60,2) AS news_detail_duration,
+        SUM(news_scan_num) AS news_scan_num,
+        SUM(scan_news_user_num) AS scan_news_user_num,
+        SUM(scan_news_num) AS scan_news_num,
+        IF(SUM(scan_news_user_num)=0,0,ROUND(SUM(news_detail_completion) / SUM(scan_news_num),4)*100) AS avg_news_detail_completion,
+        IF(SUM(news_click_user_num)=0,0,ROUND(SUM(news_click_num) / SUM(news_click_user_num),2)) AS per_news_click_num,
+        IF(SUM(scan_news_user_num)=0,0,ROUND((SUM(news_detail_duration)/60) / SUM(scan_news_user_num),2)) AS per_news_detail_duration,
+        IF(SUM(dau)=0,0,ROUND(SUM(show_users) / SUM(dau),4)*100) AS show_rate,
+        IF(SUM(dau)=0,0,ROUND(SUM(refresh_user) / SUM(dau),4)*100) AS refresh_rate,
+        IF(SUM(dau)=0,0,ROUND(SUM(auto_refresh_user) / SUM(dau),4)*100) AS auto_refresh_rate,
+        IF(SUM(dau)=0,0,ROUND(SUM(manual_refresh_user) / SUM(dau),4)*100) AS hand_refresh_rate,
+        IF(SUM(refresh_user)=0,0,ROUND(SUM(refresh_times) / SUM(refresh_user),2)) AS avg_refresh_num,
+        IF(SUM(dau)=0,0,ROUND(SUM(show_times) / SUM(dau),2)) AS avg_show_vid_num,
+        IF(SUM(duration)=0,0,ROUND(SUM(play_duration) / SUM(duration),4)*100) AS play_completeness,
+        IF(SUM(dau)=0,0,ROUND(SUM(play_times) / SUM(dau),2)) AS avg_play_num,
+        IF(SUM(dau)=0,0,ROUND(SUM(play_users) / SUM(dau),4)*100) AS play_permeate_ratio,
+        IF(SUM(dau)=0,0,ROUND(SUM(play_duration/60) / SUM(dau),2)) AS avg_play_duration,
+        IF(SUM(dau)=0,0,ROUND(SUM(use_time_len/60) / SUM(dau),2)) AS avg_use_duration,
+        IF(SUM(dau)=0,0,ROUND(SUM(start_times) / SUM(dau),2)) AS avg_start_num,
+        IF(SUM(show_times)=0,0,ROUND(SUM(play_times) / SUM(show_times),4)*100) AS ctr,
+        IF(SUM(exit_times)=0,0,ROUND(SUM(use_time_len/60) / SUM(exit_times),2)) AS avg_once_use_duration
+        FROM dm_bobo_product_quantity_abid_day a
+        WHERE 1=1
+        <if test="start_dt != null">
+            AND dt &gt;= #{start_dt}
+        </if>
+        <if test="end_dt != null">
+            AND dt &lt;= #{end_dt}
+        </if>
+        <if test="plat_arr != null and plat_arr.length > 0">
+            AND plat IN
+            <foreach item="plat" index="index" collection="plat_arr"
+                     open="(" separator="," close=")">
+                #{plat}
+            </foreach>
+        </if>
+        <if test="user_type_arr != null and user_type_arr.length > 0">
+            AND user_type IN
+            <foreach item="user_type" index="index" collection="user_type_arr"
+                     open="(" separator="," close=")">
+                #{user_type}
+            </foreach>
+        </if>
+        <if test="abid_arr != null and abid_arr.length > 0">
+            AND abid IN
+            <foreach item="abid" index="index" collection="abid_arr"
+                     open="(" separator="," close=")">
+                #{abid}
+            </foreach>
+        </if>
+        <if test="version_arr != null and version_arr.length > 0">
+            AND app_version IN
+            <foreach item="version" index="index" collection="version_arr"
+                     open="(" separator="," close=")">
+                #{version}
+            </foreach>
+        </if>
+        GROUP BY dt,abid
+        <if test="plat_arr != null and plat_arr.length > 0">
+            ,plat
+        </if>
+        <if test="user_type_arr != null and user_type_arr.length > 0">
+            ,user_type
+        </if>
+        <if test="version_arr != null and version_arr.length >0 ">
+            ,app_version
+        </if>
+        ORDER BY dt ASC
+    </select>
+
+
+</mapper>
+
